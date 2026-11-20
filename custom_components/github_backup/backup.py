@@ -5,6 +5,7 @@ import logging
 import re
 from asyncio import Lock
 from collections.abc import AsyncIterator, Callable, Coroutine
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.backup import (
@@ -16,7 +17,7 @@ from homeassistant.components.backup import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.util.dt import parse_datetime
+from homeassistant.util.dt import as_utc, parse_datetime
 
 from .const import (
     CONF_AGENT_ID,
@@ -35,6 +36,7 @@ from .github import (
 )
 
 TAG_PREFIX = "ha-backup-"
+DATED_TAG_PREFIX = "ha-dated-backup-"
 METADATA_MARKER = "<!-- github_backup:v1 -->\n"
 BACKUP_ID_PATTERN = re.compile(r"[a-zA-Z0-9_-]{1,128}")
 RETENTION_FIELDS = ("instance_id", "with_automatic_settings")
@@ -47,6 +49,11 @@ def _tag(backup_id: str) -> str:
     return TAG_PREFIX + backup_id
 
 
+def _dated_tag(backup_id: str, backup_time: datetime) -> str:
+    """Use a fixed-width UTC timestamp so GitHub sorts newest backups first."""
+    return f"{DATED_TAG_PREFIX}{as_utc(backup_time):%Y%m%dT%H%M%S%fZ}-{backup_id}"
+
+
 def _metadata(release: dict) -> AgentBackup | None:
     """Read metadata only from releases created by this integration."""
     body = release.get("body") or ""
@@ -55,13 +62,14 @@ def _metadata(release: dict) -> AgentBackup | None:
     try:
         backup = AgentBackup.from_dict(json.loads(body.removeprefix(METADATA_MARKER)))
         if (
-            release["tag_name"] == _tag(backup.backup_id)
+            (backup_time := parse_datetime(backup.date)) is not None
+            and release["tag_name"]
+            in (_tag(backup.backup_id), _dated_tag(backup.backup_id, backup_time))
             and backup.protected is True
             and type(backup.size) is int
             and 0 < backup.size < MAX_ASSET_SIZE
             and isinstance(backup.name, str)
             and isinstance(backup.extra_metadata, dict)
-            and parse_datetime(backup.date) is not None
         ):
             return backup
     except (KeyError, TypeError, ValueError, BackupNotFound):
@@ -152,7 +160,8 @@ class GitHubBackupAgent(BackupAgent):
         if (backup_time := parse_datetime(backup.date)) is None:
             raise DestinationError("invalid_metadata", "The backup date is invalid.")
 
-        tag = _tag(backup.backup_id)
+        legacy_tag = _tag(backup.backup_id)
+        tag = _dated_tag(backup.backup_id, backup_time)
         metadata = backup.as_dict()
         metadata["extra_metadata"] = {
             key: backup.extra_metadata[key]
@@ -163,6 +172,8 @@ class GitHubBackupAgent(BackupAgent):
         async with self._mutation_lock:
             destination = await self._destination(require_private=True)
             release = await destination.async_release(tag)
+            if release is None:
+                release = await destination.async_release(legacy_tag)
             if release is None:
                 release = await destination.async_create_release(
                     tag,
@@ -211,12 +222,26 @@ class GitHubBackupAgent(BackupAgent):
     async def _complete_release(
         self, destination: GitHubRepository, backup_id: str
     ) -> tuple[dict, AgentBackup, dict]:
-        release = await destination.async_release(_tag(backup_id))
+        release = await self._release_for_backup(destination, backup_id)
         if release is not None and (backup := _metadata(release)) is not None:
             asset = _archive(release)
             if asset is not None and _complete(asset, backup):
                 return release, backup, asset
         raise BackupNotFound(f"Backup {backup_id} is unavailable in GitHub.")
+
+    async def _release_for_backup(
+        self, destination: GitHubRepository, backup_id: str
+    ) -> dict | None:
+        """Find a release when Home Assistant supplies only the backup ID."""
+        if (release := await destination.async_release(_tag(backup_id))) is not None:
+            return release
+        async for release in destination.async_releases():
+            tag = release["tag_name"]
+            if tag.startswith(DATED_TAG_PREFIX) and (
+                tag.removeprefix(DATED_TAG_PREFIX).partition("-")[2] == backup_id
+            ):
+                return release
+        return None
 
     async def async_download_backup(
         self, backup_id: str, **kwargs: Any
@@ -235,7 +260,7 @@ class GitHubBackupAgent(BackupAgent):
                 raise DestinationError(
                     "release_conflict", "The backup release contains additional assets."
                 )
-            await destination.async_delete_release(release["id"], _tag(backup_id))
+            await destination.async_delete_release(release["id"], release["tag_name"])
 
     async def async_get_backup(self, backup_id: str, **kwargs: Any) -> AgentBackup:
         """Find metadata for a complete archive."""
