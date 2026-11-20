@@ -1,0 +1,16 @@
+{
+  "domain": "github_backup",
+  "name": "Free Home Assistant Cloud backup",
+  "codeowners": [
+    "@CodingRac"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "backup"
+  ],
+  "documentation": "https://github.com/CodingRac/Free-Home-Assistant-Cloud-backup#readme",
+  "integration_type": "service",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/CodingRac/Free-Home-Assistant-Cloud-backup/issues",
+  "version": "0.1.0"
+}

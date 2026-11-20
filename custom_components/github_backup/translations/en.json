@@ -1,0 +1,46 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure Free Home Assistant Cloud backup",
+        "description": "**1. Create a place for your backups**\n\nAlready have a private backup repository you want to use? Skip to step 2.\n\n- Open [Create a new repository on GitHub]({new_repository_url}).\n- In **Repository name**, type any name you like. For example, `my-home-backups`.\n- Under **Visibility**, choose **Private** so your backups stay private.\n- Leave the other settings as they are and click **Create repository**.\n\n**2. Give Home Assistant a key to your backup repository**\n\n- Open [Create a GitHub token for Home Assistant]({new_token_url}). The link fills in the token name and permission.\n- Under **Expiration**, choose **No expiration** so your backups keep running without having to replace the token on a schedule.\n- Under **Resource owner**, choose the account that owns your backup repository. That's usually your GitHub username.\n- Under **Repository access**, choose **Only select repositories**, then pick only your new backup repository.\n- Under **Permissions**, make sure **Contents** says **Read and write**. This lets Home Assistant save backups and remove old ones.\n- Click **Generate token** and copy the long code GitHub shows you. Treat it like a password.\n\n**3. Connect Home Assistant to GitHub**\n\n- Open your backup repository on GitHub. Copy the link from your browser's address bar and paste it into **GitHub repository link** below. If the right link is already filled in, leave it as it is.\n- Paste the code from step 2 into **Fine-grained GitHub token**, then click **Submit**.",
+        "data": {
+          "repository": "GitHub repository link",
+          "token": "Fine-grained GitHub token"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reconnect your GitHub repository",
+        "description": "Create a [fine-grained token]({new_token_url}) for **{repository}** with **Contents: Read and write**, then paste it below.",
+        "data": {
+          "token": "Fine-grained GitHub token"
+        }
+      }
+    },
+    "error": {
+      "invalid_repository": "Open your backup repository on GitHub and paste the link from its main page.",
+      "access_denied": "Check the repository name, token expiration, and Contents read and write permissions.",
+      "not_private": "On GitHub, set the backup repository’s visibility to Private, then try again.",
+      "cannot_connect": "Could not connect to GitHub.",
+      "rate_limited": "GitHub rate limit reached. Try again later.",
+      "github_error": "GitHub returned an unexpected response.",
+      "invalid_token": "Enter a valid fine-grained GitHub token. Check whether it has expired or been revoked.",
+      "wrong_repository": "GitHub returned a different repository. Check the configured repository.",
+      "connection_changed": "The GitHub connection changed while you were saving. Open Reconfigure and try again."
+    },
+    "abort": {
+      "already_configured": "This repository is already configured.",
+      "reauth_successful": "GitHub repository reconnected.",
+      "reconfigure_successful": "Backup connection updated."
+    },
+    "create_entry": {
+      "turn_on_backups": "**4. Turn on GitHub backups**\n\n- Turn on the switch next to **Free Home Assistant Cloud backup**.\n- Click its gear and make sure **Encryption** is on. Save your **Backup emergency kit** somewhere safe.\n- Under **Retention**, choose how many automatic backups to keep.\n- Run a manual backup to this location to confirm GitHub lets Home Assistant upload.\n\n**[Open Backup Locations]({locations_path})**"
+    }
+  },
+  "options": {
+    "step": {},
+    "abort": {
+      "continue_reconfigure": "Open the backup connection form."
+    }
+  }
+}
