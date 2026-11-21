@@ -39,13 +39,15 @@
 
 ## Install
 
-Use the badge above, or paste the project link into **Settings → Marketplace → Add from link**.
+Click [**Open in Home Assistant Marketplace**][marketplace] to open this integration’s page directly. If prompted, connect GitHub and click **Add**. Then select **Install** on the integration page.
+
+To add it manually, paste this address into **Settings → Marketplace → Add from link**.
 
 ```text
 https://github.com/CodingRac/Free-Home-Assistant-Cloud-backup
 ```
 
-If prompted, connect GitHub and choose **Integration**. Open **Free Home Assistant Cloud backup**, select **Install**, and restart Home Assistant if prompted.
+Choose **Integration** if asked. If the repository doesn’t appear in **Browse** after you add it, open **⋮ → Custom repositories** in Marketplace or use the direct link above. Restart Home Assistant if the install prompts you to.
 
 ## Set up GitHub backups
 
@@ -86,6 +88,7 @@ This integration uses a fine-grained GitHub token scoped to your private backup 
 Go to **Settings → Devices & services → Free Home Assistant Cloud backup** and click the **Configure** gear next to your connection. To replace just the token, leave the repository link as it is. If you switch repositories, future backups go to the new one and existing archives stay in the old one.
 
 [restore]: https://www.home-assistant.io/common-tasks/general/backups/#restoring-a-backup
+[marketplace]: https://my.home-assistant.io/redirect/marketplace_repository/?owner=CodingRac&repository=Free-Home-Assistant-Cloud-backup&category=integration
 [cloud]: https://support.nabucasa.com/hc/en-us/articles/25619338169501-About-the-Home-Assistant-Cloud-backup
 [github-limits]: https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases#storage-and-bandwidth-quotas
 [ha-github]: https://github.com/home-assistant/core/blob/2026.11.1/homeassistant/components/github/config_flow.py
